@@ -1,9 +1,35 @@
 const express = require('express');
+const mongoose = require('mongoose');
+const userModel = require('./userModel');
+
+
+
 const app = express();
- const PORT= 9000;
+const PORT= 9000;
+const MONGO_URI = `mongodb+srv://Deepak:1234@cluster0.z2rzson.mongodb.net/myTestdb`
+
+
+mongoose.connect(MONGO_URI).then(()=>{
+console.log("mongodb connected sucssfully")
+})
+.catch((error)=>{
+ console.log(error)
+});
+
+
 
 // app.use(express.json());
 app.use(express.urlencoded({extended : true}));
+
+
+
+
+
+
+
+
+
+
 app.get('/',(req, res)=>{
     console.log("just testing the server connection here");
 
@@ -44,6 +70,33 @@ app.get('/auth/:name/:age',(req,res)=>{
     return res.send(`Welcome to the auth page this is just for testing!`);
 });
 
+app.post('/form-data', async(req, res)=>{
+    console.log(req.body)
+
+    const nameC =  req.body. name
+    const emailC = req.body.email
+    const passwordC = req.body.password
+
+    const userObj = new userModel({
+
+        name : nameC,
+        email : emailC,
+        password : passwordC,
+    });
+     console.log(userObj)
+
+     try{
+        const userDb = await userObj.save();
+        console.log(userDb);
+        return res.status(201).json(userDb);
+     }catch(error){
+        console.log(error);
+        return res.status(500).json(error);
+
+     }
+
+});
+
 app.get('/get-form',(req,res)=>{
     res.send(`<!DOCTYPE html>
 <html lang="en">
@@ -59,17 +112,14 @@ app.get('/get-form',(req,res)=>{
         <label for="name">Name :</label>
         <input type="text" name ="name" placeholder="Please enter your name" required>
         <br><br>
-        <label for="age">Age :</label>
-        <input type="number" name="age" placeholder="Please enter your age" required>
-        <br><br> 
+        <label for="email">Email :</label>
+        <input type="text" name="email" placeholder="Please enter your Email" required>
+        <br><br>
+        <label for="password">Password :</label>
+        <input type="text" name="password" placeholder="Please enter your password" required>
+        <br><br>
         <button type="submit">Submit</button>
     `);
-});
-
-app.post('/form-data',(req, res)=>{
-    console.log(req.body)
-
-    return res.send("Your Data is Received We will get Back to you Shortly!")
 });
 
 
