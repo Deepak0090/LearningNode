@@ -1,12 +1,16 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const userModel = require('./userModel');
-
-
+const session = require('express-session')
+const mongodbSession = require('connect-mongodb-session')(session)
 
 const app = express();
 const PORT= 9000;
 const MONGO_URI = `mongodb+srv://Deepak:1234@cluster0.z2rzson.mongodb.net/myTestdb`
+const store = new mongodbSession({
+    uri : MONGO_URI,
+    collection : "session"
+})
 
 
 mongoose.connect(MONGO_URI).then(()=>{
@@ -20,6 +24,12 @@ console.log("mongodb connected sucssfully")
 
 // app.use(express.json());
 app.use(express.urlencoded({extended : true}));
+app.use(session({
+    secret : "This is the backend module",
+    store : store,
+    resave : false,
+    saveUninitialized : false,
+}));
 
 
 
@@ -70,7 +80,34 @@ app.get('/auth/:name/:age',(req,res)=>{
     return res.send(`Welcome to the auth page this is just for testing!`);
 });
 
-app.post('/form-data', async(req, res)=>{
+
+
+app.get('/ragister',(req,res)=>{
+    res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>form</title>
+</head>
+<body>
+
+    <h1>Hye! Please create Your Account to fill the below details</h1>
+    <form action="/ragister-data" method="POST">
+        <label for="name">Name :</label>
+        <input type="text" name ="name" placeholder="Please enter your name" required>
+        <br><br>
+        <label for="email">Email :</label>
+        <input type="text" name="email" placeholder="Please enter your Email" required>
+        <br><br>
+        <label for="password">Password :</label>
+        <input type="text" name="password" placeholder="Please enter your password" required>
+        <br><br>
+        <button type="submit">Submit</button>
+    `);
+});
+
+app.post('/ragister-data', async(req, res)=>{
     console.log(req.body)
 
     const nameC =  req.body. name
@@ -97,7 +134,7 @@ app.post('/form-data', async(req, res)=>{
 
 });
 
-app.get('/get-form',(req,res)=>{
+app.get('/login',(req, res)=>{
     res.send(`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -107,20 +144,70 @@ app.get('/get-form',(req,res)=>{
 </head>
 <body>
 
-    <h1>Hey this form is Just for check the Api working fine or Not Please fill the Below feilds</h1>
-    <form action="/form-data" method="POST">
-        <label for="name">Name :</label>
-        <input type="text" name ="name" placeholder="Please enter your name" required>
-        <br><br>
+    <h1>WelCome Back Please Login !</h1>
+    <form action="/login-data" method="POST">
         <label for="email">Email :</label>
         <input type="text" name="email" placeholder="Please enter your Email" required>
         <br><br>
         <label for="password">Password :</label>
         <input type="text" name="password" placeholder="Please enter your password" required>
         <br><br>
-        <button type="submit">Submit</button>
-    `);
+        <button type="submit">Submit</button>`)
 });
+
+app.post('/login-data', async (req, res)=>{
+    console.log(req.body)
+
+    const { email, password } = req.body;
+
+try{
+    const userDb = await userModel.findOne({email : email})
+
+    if(!userDb){
+        return res.status(400).json("Oops This Email in not Ragister in our Detabse please Ragister First")
+    }
+    if(password !== userDb.password){
+        return res.status(400).json("Incorrect Password!")
+    }
+    console.log(req.session)
+    req.session.isAuth = true;
+
+    return res.status(200).json("Login Successful !")
+
+}catch(error){
+    return res.status(500).json(error)
+}    
+
+});
+
+app.get('/check', (req, res)=>{
+    console.log(req.session)
+    if(req.session.isAuth){
+      return res.send("Private data send");
+    }else{
+        return res.send("Session expired Please Login Again")
+    }
+    
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // app.get('/add-api',(req, res)=>{    // this is for for when you use query params
